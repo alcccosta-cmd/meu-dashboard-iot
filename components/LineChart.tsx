@@ -32,17 +32,19 @@ export default function LineChart({ data }: LineChartProps) {
           legendOffset: -40,
           legendPosition: 'middle',
         }}
-        // --- LINHA CORRIGIDA ---
-        colors={['#22d3ee']} // Usando um código de cor ciano diretamente
-        // -----------------------
+        colors={['#22d3ee']}
         pointSize={10}
         pointColor={{ theme: 'background' }}
         pointBorderWidth={2}
         pointBorderColor={{ from: 'serieColor' }}
         pointLabelYOffset={-12}
         useMesh={true}
+        // --- SEÇÃO CORRIGIDA ---
         theme={{
-          textColor: '#e5e7eb',
+          // A cor do texto agora está dentro do objeto 'text' usando a propriedade 'fill'
+          text: {
+            fill: '#e5e7eb',
+          },
           axis: {
             domain: { line: { stroke: '#6b7280' } },
             ticks: { line: { stroke: '#6b7280' }, text: { fill: '#d1d5db' } },
@@ -51,6 +53,7 @@ export default function LineChart({ data }: LineChartProps) {
           grid: { line: { stroke: '#4b5563', strokeDasharray: '4 4' } },
           tooltip: { container: { background: '#1f2937', color: '#f9fafb' } },
         }}
+        // -----------------------
       />
     </div>
   );
