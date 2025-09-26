@@ -17,7 +17,6 @@ interface RelayConfig {
 }
 
 export default function AutomationPage() {
-  // Lógica de autenticação
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -38,9 +37,13 @@ export default function AutomationPage() {
         const data = await response.json();
         if (Array.isArray(data)) { setConfigs(data); } 
         else { throw new Error("Os dados recebidos da API não são um array."); }
-      } catch (error: any) {
+      } catch (error) { // <<< CORREÇÃO APLICADA AQUI
         console.error("Falha ao buscar configurações:", error);
-        setError(error.message || "Ocorreu um erro desconhecido.");
+        if (error instanceof Error) {
+          setError(error.message); // Usa a mensagem do erro, de forma segura
+        } else {
+          setError("Ocorreu um erro desconhecido.");
+        }
       }
       setIsLoading(false);
     };
@@ -69,7 +72,6 @@ export default function AutomationPage() {
     });
   };
   
-  // Mostra "Carregando..." para a verificação da sessão E para o fetch dos dados
   if (status === "loading" || isLoading) {
     return <div className="text-center p-10">Carregando...</div>;
   }
