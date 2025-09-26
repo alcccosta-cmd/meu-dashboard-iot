@@ -32,15 +32,11 @@ export default function LineChart({ data }: LineChartProps) {
           legendPosition: 'middle',
         }}
         colors={['#22d3ee', '#facc15']}
-        
-        // --- NOVAS ALTERAÇÕES PARA O VISUAL ---
-        enablePoints={false}       // <-- MUDANÇA: Remove os pontos/círculos da linha
-        lineWidth={3}              // <-- BÔNUS: Deixa a linha um pouco mais grossa
-        curve="catmullRom"         // <-- MUDANÇA: Suaviza a curva de forma mais pronunciada
-        enableArea={true}          // <-- BÔNUS: Adiciona uma área preenchida abaixo da linha
-        areaOpacity={0.1}          // <-- BÔNUS: Deixa a área bem sutil
-        // ------------------------------------
-        
+        enablePoints={false}
+        lineWidth={3}
+        curve="catmullRom"
+        enableArea={true}
+        areaOpacity={0.1}
         useMesh={true}
         legends={[
             {
@@ -48,7 +44,7 @@ export default function LineChart({ data }: LineChartProps) {
                 direction: 'row',
                 justify: false,
                 translateX: 0,
-                translateY: -25, // Ajustado para o novo margin.top
+                translateY: -25,
                 itemsSpacing: 0,
                 itemDirection: 'left-to-right',
                 itemWidth: 140,
@@ -60,8 +56,7 @@ export default function LineChart({ data }: LineChartProps) {
             }
         ]}
         theme={{
-          // ... (o tema permanece o mesmo)
-          textColor: '#e5e7eb',
+          // A linha "textColor" que causava o erro foi removida daqui.
           axis: {
             domain: { line: { stroke: '#6b7280' } },
             ticks: { line: { stroke: '#6b7280' }, text: { fill: '#d1d5db' } },
