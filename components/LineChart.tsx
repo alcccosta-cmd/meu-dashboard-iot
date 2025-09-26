@@ -1,4 +1,3 @@
-// components/LineChart.tsx
 'use client';
 import { ResponsiveLine } from '@nivo/line';
 
@@ -11,7 +10,7 @@ export default function LineChart({ data }: LineChartProps) {
     <div className="w-full h-full min-h-[250px] md:min-h-[350px]">
       <ResponsiveLine
         data={data}
-        margin={{ top: 20, right: 20, bottom: 60, left: 50 }}
+        margin={{ top: 30, right: 20, bottom: 60, left: 50 }}
         xScale={{ type: 'point' }}
         yScale={{ type: 'linear', min: 'auto', max: 'auto', stacked: false, reverse: false }}
         axisTop={null}
@@ -32,19 +31,37 @@ export default function LineChart({ data }: LineChartProps) {
           legendOffset: -40,
           legendPosition: 'middle',
         }}
-        colors={['#22d3ee']}
-        pointSize={10}
-        pointColor={{ theme: 'background' }}
-        pointBorderWidth={2}
-        pointBorderColor={{ from: 'serieColor' }}
-        pointLabelYOffset={-12}
+        colors={['#22d3ee', '#facc15']}
+        
+        // --- NOVAS ALTERAÇÕES PARA O VISUAL ---
+        enablePoints={false}       // <-- MUDANÇA: Remove os pontos/círculos da linha
+        lineWidth={3}              // <-- BÔNUS: Deixa a linha um pouco mais grossa
+        curve="catmullRom"         // <-- MUDANÇA: Suaviza a curva de forma mais pronunciada
+        enableArea={true}          // <-- BÔNUS: Adiciona uma área preenchida abaixo da linha
+        areaOpacity={0.1}          // <-- BÔNUS: Deixa a área bem sutil
+        // ------------------------------------
+        
         useMesh={true}
-        // --- SEÇÃO CORRIGIDA ---
+        legends={[
+            {
+                anchor: 'top-left',
+                direction: 'row',
+                justify: false,
+                translateX: 0,
+                translateY: -25, // Ajustado para o novo margin.top
+                itemsSpacing: 0,
+                itemDirection: 'left-to-right',
+                itemWidth: 140,
+                itemHeight: 20,
+                itemOpacity: 0.85,
+                symbolSize: 12,
+                symbolShape: 'circle',
+                symbolBorderColor: 'rgba(0, 0, 0, .5)',
+            }
+        ]}
         theme={{
-          // A cor do texto agora está dentro do objeto 'text' usando a propriedade 'fill'
-          text: {
-            fill: '#e5e7eb',
-          },
+          // ... (o tema permanece o mesmo)
+          textColor: '#e5e7eb',
           axis: {
             domain: { line: { stroke: '#6b7280' } },
             ticks: { line: { stroke: '#6b7280' }, text: { fill: '#d1d5db' } },
@@ -52,8 +69,8 @@ export default function LineChart({ data }: LineChartProps) {
           },
           grid: { line: { stroke: '#4b5563', strokeDasharray: '4 4' } },
           tooltip: { container: { background: '#1f2937', color: '#f9fafb' } },
+          legends: { text: { fill: '#e5e7eb' } },
         }}
-        // -----------------------
       />
     </div>
   );

@@ -1,30 +1,31 @@
-// hooks/useMqtt.ts
 'use client';
+
 import { useEffect, useState, useRef } from 'react';
 import mqtt, { MqttClient } from 'mqtt';
 import { SensorData } from '@/types';
 
 export type MqttStatus = 'Conectando...' | 'Conectado' | 'Erro' | 'Reconectando...' | 'Desconectado';
-export type HistoryData = {
-  id: keyof SensorData;
-  data: { x: string; y: number }[];
-}[];
+export type HistoryData = { id: string; data: { x: string; y: number }[] }[];
+export interface RelayStatus { [key: string]: boolean; }
 
-const MAX_HISTORY_LENGTH = 30;
+const MAX_HISTORY_LENGTH = 100;
 
-export const useMqtt = () => {
+export const useMqtt = (initialHistory: HistoryData | null) => {
   const [status, setStatus] = useState<MqttStatus>('Desconectado');
   const [latestData, setLatestData] = useState<SensorData | null>(null);
-  const [history, setHistory] = useState<HistoryData>([
-    { id: 'ph', data: [] }, { id: 'ec', data: [] },
-    { id: 'airTemp', data: [] }, { id: 'humidity', data: [] },
-    { id: 'waterTemp', data: [] },
-  ]);
+  const [history, setHistory] = useState<HistoryData>(initialHistory || []);
+  const [relayStatus, setRelayStatus] = useState<RelayStatus | null>(null);
   const clientRef = useRef<MqttClient | null>(null);
 
   useEffect(() => {
-    if (clientRef.current) return;
+    if (initialHistory) {
+      setHistory(initialHistory);
+    }
+  }, [initialHistory]);
 
+  useEffect(() => {
+    if (clientRef.current) return;
+    
     const brokerUrl = process.env.NEXT_PUBLIC_MQTT_BROKER_URL || '';
     const options: mqtt.IClientOptions = {
       username: process.env.NEXT_PUBLIC_MQTT_USERNAME,
@@ -32,49 +33,80 @@ export const useMqtt = () => {
       reconnectPeriod: 5000,
     };
 
-    setStatus('Conectando...');
     const client = mqtt.connect(brokerUrl, options);
     clientRef.current = client;
 
     client.on('connect', () => {
       setStatus('Conectado');
-      const topic = process.env.NEXT_PUBLIC_MQTT_TOPIC || 'aquasys/sensors/all';
-      client.subscribe(topic, (err) => {
-        if (err) {
-          console.error('Erro ao se inscrever:', err);
-          setStatus('Erro');
-        }
-      });
-    });
-
-    client.on('message', (topic, payload) => {
-      try {
-        const message = JSON.parse(payload.toString()) as SensorData;
-        const formattedMessage: SensorData = {
-          ph: parseFloat(message.ph.toFixed(2)),
-          ec: parseFloat(message.ec.toFixed(0)),
-          airTemp: parseFloat(message.airTemp.toFixed(2)),
-          humidity: parseFloat(message.humidity.toFixed(2)),
-          waterTemp: parseFloat(message.waterTemp.toFixed(2)),
-        };
-        setLatestData(formattedMessage);
-
-        const now = new Date();
-        const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-
-        setHistory(prevHistory => prevHistory.map(sensor => {
-          const newPoint = { x: timestamp, y: formattedMessage[sensor.id as keyof SensorData] };
-          const newData = [...sensor.data, newPoint].slice(-MAX_HISTORY_LENGTH);
-          return { ...sensor, data: newData };
-        }));
-      } catch (error) {
-        console.error('Erro ao parsear JSON:', error);
+      const topics = [ 'aquasys/sensors/all', 'aquasys/relay/status' ];
+      
+      if (client.connected) {
+        client.subscribe(topics, (err) => {
+          if (err) {
+            console.error('Erro ao se inscrever nos tópicos:', err);
+          } else {
+            console.log('Inscrito com sucesso nos tópicos:', topics);
+          }
+        });
       }
     });
 
-    client.on('reconnect', () => setStatus('Reconectando...'));
+    client.on('message', async (topic, payload) => {
+      const message = payload.toString();
+      try {
+        const data = JSON.parse(message);
+        
+        if (topic === 'aquasys/relay/status') {
+          setRelayStatus(data);
+        } 
+        else if (topic === 'aquasys/sensors/all') {
+          const formattedMessage: SensorData = {
+            ph: parseFloat(data.ph?.toFixed(2) || '0'),
+            ec: parseFloat(data.ec?.toFixed(0) || '0'),
+            air_temp: parseFloat(data.airTemp?.toFixed(2) || '0'),
+            humidity: parseFloat(data.humidity?.toFixed(2) || '0'),
+            water_temp: parseFloat(data.waterTemp?.toFixed(2) || '0'),
+          };
+          setLatestData(formattedMessage);
+          
+          try {
+            const response = await fetch('/api/readings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(formattedMessage),
+            });
+            if (!response.ok) {
+              console.error("API /api/readings retornou um erro:", response.statusText);
+            }
+          } catch (fetchError) {
+            console.error("Fetch para /api/readings falhou:", fetchError);
+          }
+
+          const now = new Date();
+          const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+          setHistory(prevHistory => 
+            prevHistory.map(sensor => {
+              const sensorKey = sensor.id as keyof SensorData;
+              if (formattedMessage.hasOwnProperty(sensorKey)) {
+                const newPoint = { x: timestamp, y: formattedMessage[sensorKey] };
+                const newData = [...sensor.data, newPoint].slice(-MAX_HISTORY_LENGTH);
+                return { ...sensor, data: newData };
+              }
+              return sensor;
+            })
+          );
+        }
+      } catch (error) { 
+        console.error('Erro ao processar mensagem MQTT:', message, error); 
+      }
+    });
+
+    client.on('reconnect', () => {
+      setStatus('Reconectando...');
+    });
+
     client.on('error', (err) => {
-      console.error('Erro MQTT:', err);
+      console.error('Erro de conexão MQTT:', err);
       setStatus('Erro');
       client.end();
     });
@@ -87,5 +119,5 @@ export const useMqtt = () => {
     };
   }, []);
 
-  return { status, latestData, history };
+  return { status, latestData, history, relayStatus };
 };

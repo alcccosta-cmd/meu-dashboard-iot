@@ -1,0 +1,51 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Reading {
+  id         Int      @id @default(autoincrement())
+  timestamp  DateTime @default(now())
+  ph         Float
+  ec         Float
+  air_temp   Float
+  humidity   Float
+  water_temp Float
+  @@map("readings")
+}
+
+model RelayConfig {
+  relayIndex             Int     @id
+  mode                   Int
+  led_on_hour            Int
+  led_off_hour           Int
+  cycle_on_min           Int
+  cycle_off_min          Int
+  ph_pulse_sec           Int
+  temp_threshold_on      Float
+  temp_threshold_off     Float
+  humidity_threshold_on  Float
+  humidity_threshold_off Float
+  ec_threshold           Float
+  ec_pulse_sec           Int
+  co2_threshold_on       Int
+  co2_threshold_off      Int
+  ph_threshold_low       Float
+  ph_threshold_high      Float
+  @@map("RelayConfigs")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}

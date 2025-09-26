@@ -1,8 +1,9 @@
 // types/index.ts
+
 export interface SensorData {
   ph: number;
   ec: number;
-  airTemp: number;
+  air_temp: number;   // Corrigido de airTemp para air_temp
   humidity: number;
-  waterTemp: number;
+  water_temp: number; // Corrigido de waterTemp para water_temp
 }
